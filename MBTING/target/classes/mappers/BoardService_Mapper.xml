@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ezen.myapp.persistence.BoardService_Mapper">
+
+
+<insert id="boardInsert" parameterType="HashMap">
+insert into bclass_board(subject,contents,pwd,ip,midx,filename)
+values(#{subject},#{contents},#{pwd},#{ip},#{midx},#{filename})
+</insert>
+
+ 
+<sql id="search">
+<if test="searchType != null and searchType.equals('membernickname')">
+and membernickname like Concat('%', Ifnull(#{keyword}, ''),'%')
+</if>
+<if test="searchType != null and searchType.equals('subject')">
+and subject like Concat('%', Ifnull(#{keyword}, ''),'%')
+</if>
+</sql> 
+ 
+<select id="boardTotalCount" resultType="Integer">
+select count(*) as cnt from bclass_board A inner join bclass_member B on A.midx=B.midx where bdelyn='N'
+	<include refid="search"></include> 
+</select>
+
+<select id="boardTotalCount2" parameterType="Integer" resultType="Integer">
+select count(*) as cnt from bclass_board A inner join bclass_member B on A.midx=B.midx where bdelyn='N' and A.midx=#{midx}
+<include refid="search"></include> 
+</select>
+
+
+<select id="boardSelectAll" parameterType="HashMap" resultType="bv">
+	select * from bclass_board C inner join bclass_member D on C.midx=D.midx where bdelyn='N'
+	<include refid="search"></include> 
+	order by bidx desc limit #{start}, #{end}
+</select>
+
+<select id="boardSelectAll2" parameterType="HashMap" resultType="bv">
+	select * from bclass_board C inner join bclass_member D on C.midx=D.midx where bdelyn='N' and C.midx=#{midx}
+	<include refid="search"></include> 
+	order by bidx desc limit #{start}, #{end}
+</select>
+
+
+<select id="boardSelectOne" parameterType="Integer" resultType="bv">
+select * from bclass_board where bdelyn='N' and bidx = #{bidx}
+</select>
+
+
+<select id="commentSelectAll" parameterType="Integer" resultType="cv">
+	select * from bclass_comment C inner join bclass_member D on C.midx=D.midx where cdelyn='N' and bidx=#{bidx}
+	order by cidx desc limit 0, 5
+</select>
+
+<insert id="commentInsert" parameterType="cv">
+ insert into bclass_comment(c_contents,bidx,midx) 
+ values(#{c_contents},#{bidx},#{midx})
+</insert>
+
+
+<update id="commentDel" parameterType="Integer">
+update bclass_comment set cdelyn='Y', writeday=now() where cidx=#{cidx}
+</update>
+
+<select id="commentMo" parameterType="HashMap" resultType="cv">
+	select * from bclass_comment C inner join bclass_member D on C.midx=D.midx where cdelyn='N' and bidx=#{bidx}
+	order by cidx desc limit 0, #{page}
+</select>
+
+
+<select id="commentTotalPage" parameterType="Integer" resultType="Integer">
+select ceil(count(*)/5) as cnt from bclass_comment where cdelyn='N' and bidx=#{bidx}
+
+</select>
+
+<update id="boardModify" parameterType="HashMap">
+update bclass_board set subject=#{subject}, contents=#{contents},writeday=now() where bidx=#{bidx} and pwd=#{pwd} 
+</update>
+
+<update id="boardDelete" parameterType="HashMap">
+update bclass_board set bdelyn='Y',writeday=now() where bidx=#{bidx} and pwd = #{pwd}
+</update>
+
+<update id="plusCnt" parameterType="Integer">
+update bclass_board 
+set viewcount = viewcount + 1 
+where bidx = #{bidx}
+</update>
+
+
+
+<update id="updateReplyCnt" parameterType="Integer">
+    update bclass_board B
+    set replycnt = (select count(*) as replycnt from bclass_comment C where B.bidx=C.bidx and cdelyn='N')
+    where bidx = #{bidx}
+</update>
+
+<insert id="Inserthit" parameterType="HashMap"> 
+	insert into bclass_hit(bidx,midx) values(#{bidx},#{midx})
+</insert>
+
+<!-- <update id="updatehit">update bclass_hit set<if test="hit_check == 'N'">hit_check='Y',</if><if test="hit_check == 'Y'">hit_check='N',</if>where bidx = #{bidx}, and hidx=#{hidx} </update> -->
+
+
+<update id="hitCnt" parameterType="Integer">
+	update bclass_board B
+	set hit = (select count(*) as hit from bclass_hit C where B.bidx=C.bidx and hit_check='Y')
+	where bidx = #{bidx}
+ </update>
+
+
+</mapper>
